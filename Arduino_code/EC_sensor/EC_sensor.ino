@@ -59,7 +59,7 @@
 //##################################################################################
  
  
-int R1= 1000;
+int R1= 470;
 int Ra=25; //Resistance of powering Pins
 int ECPin= A0;
 int ECGround=A1;
@@ -87,7 +87,7 @@ float TemperatureCoef = 0.019; //this changes depending on what chemical we are 
 //********************** Cell Constant For Ec Measurements *********************//
 //Mine was around 2.9 with plugs being a standard size they should all be around the same
 //But If you get bad readings you can use the calibration script and fluid to get a better estimate for K
-float K=2.88;
+float K=0.025;
  
  
  
@@ -185,7 +185,7 @@ void GetEC(){
 //*********Reading Temperature Of Solution *******************//
 sensors.requestTemperatures();// Send the command to get temperatures
 Temperature=sensors.getTempCByIndex(0); //Stores Value in Variable
- 
+Temperature=13;
  
  
  
