@@ -16,11 +16,12 @@ LiquidCrystal_I2C lcd(0x27,16,2);
 //transmicao de dados serial
 const byte numChars = 32;
 char receivedChars[numChars];
+boolean newData = false;
+
 //data e hora & controle de tempo
 unsigned long epoch;
 String dataNowstr = "";
 String dataLUstr = "";
-boolean newData = false;
 unsigned long LCD_Time = millis();
 boolean data_Tag = true;
 boolean temp_Tag = true;
@@ -37,39 +38,39 @@ void setup() {
 }
 
 void loop() {
-    recvWithStartEndMarkers(); 
-    screen_change();
-    Serial.print(dataNowstr);
-    UpdateTime();
+    recvWithStartEndMarkers();   
+    screen_change();             
+    Serial.print(dataNowstr);    //imprime data e hora no serial 1
+    UpdateTime();                
 }
 
-void screen_change(){
+void screen_change(){           // muda a informacao em exibicao no display
   
-  if(millis() - LCD_Time >= 0 && millis() - LCD_Time <= 100 && data_Tag){             //Imprime data e hora atual e ultima atualizacao de hora recebida
+  if(millis() - LCD_Time >= 0 && millis() - LCD_Time <= 4999 && data_Tag){             //Imprime data e hora atual e ultima atualizacao de hora recebida
     dataNow();
     dataLU();
     LCD_Print(dataNowstr,dataLUstr);
     data_Tag = false;
   }
   
-  else if(millis() - LCD_Time >= 5000 && millis() - LCD_Time <= 5100 && temp_Tag){    //Imprime temperatura da solucao nutritiva e da raiz das plantas
+  else if(millis() - LCD_Time >= 5000 && millis() - LCD_Time <= 9999 && temp_Tag){    //Imprime temperatura da solucao nutritiva e da raiz das plantas
     LCD_Print("temperatura1","temperatura2");
     temp_Tag = false;
   }
   
-  else if(millis() - LCD_Time >= 10000 && millis() - LCD_Time <= 10100 && amb_Tag){  //Imprime temperatura e umidade do ar
+  else if(millis() - LCD_Time >= 10000 && millis() - LCD_Time <= 14999 && amb_Tag){  //Imprime temperatura e umidade do ar
     LCD_Print("temperatura","umidade");
     amb_Tag = false;
   }
-  else if(millis() - LCD_Time >= 15000 && millis() - LCD_Time <= 15100 && ec_Tag){  //Imprime condutividade eletrica recebida pelos 2 sensores
+  else if(millis() - LCD_Time >= 15000 && millis() - LCD_Time <= 19999 && ec_Tag){  //Imprime condutividade eletrica recebida pelos 2 sensores
     LCD_Print("EC1 2000 uS","EC2 2210 uS");
     ec_Tag = false;
   }
-  else if(millis() - LCD_Time >= 20000 && millis() - LCD_Time <= 20100 && light_Tag){  //Imprime quantidade de luz 
+  else if(millis() - LCD_Time >= 20000 && millis() - LCD_Time <= 24999 && light_Tag){  //Imprime quantidade de luz 
     LCD_Print("LuzA","luzB");
     light_Tag = false;    
-  }else if(millis() - LCD_Time >= 25000){
-    LCD_Time = millis();                                     // reinicia o "loop" do display
+  }else if(millis() - LCD_Time >= 25000){                     // reinicia o "loop" do display
+    LCD_Time = millis();                
     data_Tag = true;
     temp_Tag = true;
     amb_Tag = true;
@@ -114,7 +115,7 @@ void dataLU(){                  //data e hora Last Update (shows last received e
   dataLUstr += String(second(epoch));
   }
   
-void recvWithStartEndMarkers() {
+void recvWithStartEndMarkers() {                //recebe dados do ESP
     static boolean recvInProgress = false;
     static byte ndx = 0;
     char startMarker = '<';
@@ -147,7 +148,7 @@ void recvWithStartEndMarkers() {
 
 }
 
-void UpdateTime() {
+void UpdateTime() {               //atualiza a hora quando recebe um valor do ESP
   if (newData == true) {
     epoch = atol(receivedChars);
     setTime(epoch);
