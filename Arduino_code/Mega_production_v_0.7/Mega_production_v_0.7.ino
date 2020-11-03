@@ -1,15 +1,19 @@
 /*   Pinagem
   
-  DHT-11 pino digital 24
-  Sensores de temperatura pino digital 25
+  DHT-11 pino digital 30
+  Sensores de temperatura pino digital 31
   
   Sensor de condutividade eletrica:
   - Entrada de dados pinos analogicos A0 e A1
-  -Saida de energia pinos digitais 22 e 23
+  -Saida de energia para EC pinos digitais 40 e 41
   
   display pinos SDA e SCL
 
   Sensor de Iluminacao pino A6
+
+  pinos digitais relés 22 23 24 25
+
+  pinos para sdcard 50 51 52 53
 
 */
 
@@ -21,8 +25,8 @@
 #include <OneWire.h>
 #include <dht11.h>
 #include <DallasTemperature.h>
-#define DHT11PIN 24
-#define ONE_WIRE_BUS 25
+#define DHT11PIN 30
+#define ONE_WIRE_BUS 31
 
 uint8_t sensor1[8] = { 0x28, 0xFF, 0xC0, 0xFE, 0x71, 0x16, 0x05, 0x33 };
 uint8_t sensor2[8] = { 0x28, 0xFF, 0xDD, 0xFE, 0x71, 0x16, 0x05, 0xA3 };
@@ -50,8 +54,8 @@ int R1 = 1000;
 int Ra = 25; //Resistance of powering Pins
 int ECPin1 = A0;
 int ECPin2 = A1;
-int ECPower1 = 22;
-int ECPower2 = 23;
+int ECPower1 = 40;
+int ECPower2 = 41;
 
 float PPMconversion=0.7;
 float TemperatureCoef = 0.019;
@@ -76,7 +80,7 @@ float buffer=0;
 LiquidCrystal_I2C lcd(0x27,16,2);
 unsigned long datalog_time = millis();
 String datalogstr = "";
-const int chipSelect = 10;
+const int chipSelect = 53;
 
 //recepcao de dados serial
 const byte numChars = 32;
@@ -109,7 +113,15 @@ void setup() {
     pinMode(ECPin2,INPUT);
     digitalWrite(ECPower1,LOW);
     digitalWrite(ECPower2,LOW);
-    pinMode(50,OUTPUT);
+    pinMode(22,OUTPUT);
+    pinMode(23,OUTPUT);
+    pinMode(24,OUTPUT);
+    pinMode(25,OUTPUT);
+    digitalWrite(22,HIGH);
+    digitalWrite(23,HIGH);
+    digitalWrite(24,HIGH);
+    digitalWrite(25,HIGH);
+
     
     if (!SD.begin(chipSelect)) {
     Serial.println("Card failed, or not present");
@@ -150,7 +162,7 @@ void screen_change(){           // muda a informacao em exibicao no display
   }
   else if(millis() - LCD_Time >= 15000 && millis() - LCD_Time <= 19999 && ec_Tag){  //Imprime condutividade eletrica recebida pelos 2 sensores
     
-    LCD_Print(String(String(condutividade(ECPower1) + " uS")),String(String(condutividade(ECPower2) + " uS")));
+    LCD_Print(String(String(condutividade(ECPower1)) + " uS"), String(String(condutividade(ECPower2)) + " uS"));
     ec_Tag = false;
   }
   else if(millis() - LCD_Time >= 20000 && millis() - LCD_Time <= 24999 && light_Tag){  //Imprime quantidade de luz 
@@ -294,22 +306,21 @@ void bomba(){
   if(Temp_Raiz >= Temp_Agua + 5 || intensidade >= 4){
      if(millis() - bomba_time > 900000){
       bomba_time = millis();
-      Status_bomba != Status_bomba;
-
-    }
+      Status_bomba = !Status_bomba;
+      }
   }else{
     if(millis() - bomba_time > 3600000){
       bomba_time = millis();
-      Status_bomba != Status_bomba;
+      Status_bomba = !Status_bomba;
 
     }
   }
-  digitalWrite(50, Status_bomba);
+  digitalWrite(22, Status_bomba);
 
 }
 void Envia_ESP(String envia){
 envia = "<" + envia + ">";
-
+Serial3.print(envia);
 }
 
 void Datalog(){
@@ -330,4 +341,5 @@ if(millis() - datalog_time > 600000){
 
    
    }
+}
 }
