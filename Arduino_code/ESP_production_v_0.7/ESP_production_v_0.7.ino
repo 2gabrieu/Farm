@@ -29,9 +29,10 @@ int Temp_Raiz = 0;
 int Temp_Ambiente = 0;
 int Umidade_Ambiente = 0;
 int intensidade = 0;
-int condutividade = 0;
 int condutividade1 = 0;
 int condutividade2 = 0;
+int condutividade = 0;
+int bomba = 0;
 
 char endereco_api_thingspeak[] = "api.thingspeak.com";
 String chave_escrita_thingspeak = "DPI6SR3L0O7Z7VGA";  /* Coloque aqui sua chave de escrita do seu canal */
@@ -61,7 +62,13 @@ void loop() {
   if(WiFiTag){
   GetTime();
   PrintTime();
+  envia_dados();
   }
+  else{
+    WiFiStatus();
+    
+  }
+
 
    recvWithStartEndMarkers();
     if (newData == true) {
@@ -71,19 +78,23 @@ void loop() {
         parseData();
         newData = false;
     }
-    envia_dados();
+    
 }
 
 void GetTime(){
-  if(millis() - MilisUpdateTime >= 3600000 || res){
+  if(millis() - MilisUpdateTime >= 1800000 || res){
     timeClient.update();
     MilisUpdateTime = millis();
   }
 }
 
 void PrintTime(){
-  if(millis() - MilisSendTime >= 3600000 || res){
+  if(millis() - MilisSendTime >= 1800000 || res){
   Serial.print(WiFiTag);
+  Serial.print("<");
+  Serial.print(timeClient.getEpochTime());
+  Serial.println(">");
+
   Serial.print("<");
   Serial.print(timeClient.getEpochTime());
   Serial.println(">");
@@ -92,27 +103,26 @@ void PrintTime(){
 }
 
 void StartUp(){
-  if(res){
+  if(res && millis() - MilisUpdateTime>45000){
   WiFiStatus();
+  }
   if(WiFiTag){ 
     timeClient.begin();
     GetTime();
     PrintTime();
     res = false;
       }
-      else{
-      WiFiStatus();
-      
-      }
-  }
+
 }
 
 void WiFiStatus(){
     if(WiFi.status() != WL_CONNECTED ) {
     WiFiTag = false;
+    WiFiConnect();
   }
   else{
    WiFiTag = true;
+
   }
 }
 
@@ -179,6 +189,8 @@ void parseData() {      // split the data into its parts
     strtokIndx = strtok(NULL, ",");
     condutividade2 = atoi(strtokIndx);     // convert this part to an integer
 
+    strtokIndx = strtok(NULL, ",");
+    bomba = atoi(strtokIndx);     // convert this part to an integer
     
 }
 
@@ -186,14 +198,14 @@ void envia_dados() {
     if( millis() - last_connection_time > 60000 )
     {
         condutividade = (condutividade1 + condutividade2)/2;
-        sprintf(fields_a_serem_enviados,"field1=%d&field2=%d&field3=%d&field4=%d&field5=%d&field6=%d&field7=0", Temp_Agua, Temp_Raiz, Temp_Ambiente,
-        Umidade_Ambiente, condutividade, intensidade);
+        sprintf(fields_a_serem_enviados,"field1=%d&field2=%d&field3=%d&field4=%d&field5=%d&field6=%d&field7=%d", Temp_Agua, Temp_Raiz, Temp_Ambiente,
+        Umidade_Ambiente, condutividade, intensidade, bomba);
         envia_informacoes_thingspeak(fields_a_serem_enviados);
     }
 }
 
-void envia_informacoes_thingspeak(String string_dados)
-{
+void envia_informacoes_thingspeak(String string_dados){
+    client.connect(endereco_api_thingspeak, 80);
     if (client.connect(endereco_api_thingspeak, 80))
     {
         /* faz a requisição HTTP ao ThingSpeak */
@@ -208,6 +220,6 @@ void envia_informacoes_thingspeak(String string_dados)
         client.print(string_dados);
          
         last_connection_time = millis();
-        Serial.println("- Informações enviadas ao ThingSpeak!");
+
     }
 }
