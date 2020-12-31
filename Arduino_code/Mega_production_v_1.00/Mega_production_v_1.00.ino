@@ -68,6 +68,7 @@ bool temp_Tag = true;
 bool amb_Tag = true;
 bool ec_Tag = true;
 bool light_Tag = true;
+bool newData = false;
 
 //variaveis de Tempo 
 unsigned long bomba_time = millis();
@@ -77,41 +78,24 @@ unsigned long LCD_Time = millis();
 unsigned long datalog_time = millis();
 unsigned long envia_time = millis();
 unsigned long epoch;
+
 //variaveis string
 String bomba_str = "";
-
-
+String datalogstr = "";
+String string_data = "";
 
 //Variaveis float
-float PPMconversion = 0.7;
 float TemperatureCoef = 0.019;
 float K = 0.01486;
 float EC = 0;
-float EC25 = 0;
 float raw= 0;
-float Vin= 5;
 float Vdrop= 0;
 float Rc= 0;
 float buffer=0;
 
-//display e datalogger
-
-
-
-String datalogstr = "";
-
-
-//recepcao de dados serial
+//Outras variaveis
 const byte numChars = 32;
 char receivedChars[numChars];
-boolean newData = false;
-
-
-//data e hora & controle de tempo
-
-String dataNowstr = "";
-String dataLUstr = "";
-
 
 void setup() {
     sensors.begin();
@@ -119,7 +103,7 @@ void setup() {
     Serial.begin(9600);   //inicia a comunicacao serial com o Computador
     Serial3.begin(9600);  //inicia a comunicacao serial com o ESP8266
     Serial.println("<Arduino is ready>");
-    lcd.init();  //inicia o display LCD
+    lcd.begin();  //inicia o display LCD
 
     pinMode(ECPower1, OUTPUT);      //Define os pinos para calculo de condutividade elétrica
     pinMode(ECPin1,INPUT);
@@ -150,10 +134,9 @@ void loop() {
 
 void screen_change(){           // muda a informacao em exibicao no display
   
-  if(millis() - LCD_Time >= 0 && millis() - LCD_Time <= 4999 && data_Tag){             //Imprime data e hora atual e ultima atualizacao de hora recebida
-    dataNow();
-    dataLU();
-    LCD_Print(dataNowstr,dataLUstr);
+  if(millis() - LCD_Time >= 0 && millis() - LCD_Time <= 4999 && data_Tag){             //Imprime data e hora atual e a versao do software
+    data();
+    LCD_Print(string_data,"TeChem Agro v1.0");
     data_Tag = false;
   }
   
@@ -200,31 +183,18 @@ void LCD_Print(String str_1,String str_2){
   lcd.print(str_2);
 }
   
-void dataNow(){                  //data e hora atual
+void data(){                  //data e hora atual
   time_t t = now();
-  dataNowstr = "";
-  dataNowstr += String(day(t));
-  dataNowstr += "/";
-  dataNowstr += String(month(t));
-  dataNowstr += " ";
-  dataNowstr += String(hour(t));
-  dataNowstr += String(":");
-  dataNowstr += String(minute(t));
-  dataNowstr += String(":");
-  dataNowstr += String(second(t));
+  string_data = "";
+  string_data += String(day(t));
+  string_data += "/";
+  string_data += String(month(t));
+  string_data += " ";
+  string_data += String(hour(t));
+  string_data += String(":");
+  string_data += String(minute(t));
   }
 
-void dataLU(){                  //data e hora Last Update (shows last received epoch time)
-  dataLUstr = "Att ";
-  dataLUstr += String(day(epoch));
-  dataLUstr += "/";
-  dataLUstr += String(month(epoch));
-  dataLUstr += " ";
-  dataLUstr += String(hour(epoch));
-  dataLUstr += String(":");
-  dataLUstr += String(minute(epoch));
-  }
-  
 void recvWithStartEndMarkers() {                //recebe dados do ESP
     static boolean recvInProgress = false;
     static byte ndx = 0;
@@ -289,15 +259,15 @@ int condutividade(int ECPower){
     digitalWrite(ECPower,LOW);
    
   //***************** Converts to EC **************************//
-  Vdrop = (Vin * raw) / 1024.0;
-  Rc = (Vdrop * R1) / (Vin - Vdrop);
+  Vdrop = (5 * raw) / 1024.0;
+  Rc = (Vdrop * R1) / (5 - Vdrop);
   Rc = Rc-Ra; //acounting for Digital Pin Resitance
   EC = 1000/(Rc * K);
   
   
   //*************Compensating For Temperaure********************//
-  EC25  =  EC / ( 1 + TemperatureCoef * (Temp_Agua - 25));
-  return(int(EC25));
+  EC  =  EC / ( 1 + TemperatureCoef * (Temp_Agua - 25));
+  return(int(EC));
   
 }
 
@@ -346,7 +316,7 @@ if(millis() - datalog_time > 60000){
 
   // if the file is available, write to it:
   if (dataFile) {
-    dataFile.println(String(dataNowstr + "," + datalogstr));
+    dataFile.println(String(string_data + "," + datalogstr));
     dataFile.close();
   }
    Envia_ESP(datalogstr);
