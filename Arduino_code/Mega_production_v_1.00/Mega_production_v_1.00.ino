@@ -34,8 +34,8 @@
 #define TRIGGER_PIN  2  //pino trigger do sensor de nivel
 #define ECHO_PIN     3  //pino echo do sensor de nivel
 
-uint8_t sensor1[8] = { 0x28, 0xFF, 0xC0, 0xFE, 0x71, 0x16, 0x05, 0x33 }; //endereço do sensor de temperatura
-uint8_t sensor2[8] = { 0x28, 0xFF, 0xDD, 0xFE, 0x71, 0x16, 0x05, 0xA3 }; //endereço do sensor de temperatura
+uint8_t sensor_temperatura_agua[8] = { 0x28, 0xFF, 0xC0, 0xFE, 0x71, 0x16, 0x05, 0x33 }; //endereço do sensor de temperatura
+uint8_t sensor_temperatura_raiz[8] = { 0x28, 0xFF, 0xDD, 0xFE, 0x71, 0x16, 0x05, 0xA3 }; //endereço do sensor de temperatura
 
 #define MAX_DISTANCE 85 //distancia maxima para o sensor de nivel
 
@@ -49,11 +49,11 @@ LiquidCrystal_I2C lcd(0x27,16,2); //inicializa display
 
 //variaveis do tipo int
 int intensidade = 0;
-int Temp_Raiz = 0;
-int Temp_Agua = 0;
-int Temp_Ambiente = 0;
+int temperatura_agua = 0;
+int temperatura_agua = 0;
+int temperatura_ambiente = 0;
 int Umidade_Ambiente = 0;
-int nivel = 0;
+int nivel_agua = 0;
 int R1 = 470;
 int Ra = 25; //Resistance of powering Pins
 int ECPin1 = A0;
@@ -63,11 +63,11 @@ const int chipSelect = 53;
 
 //variaveis do tipo boolean
 bool Status_bomba = true;
-bool data_Tag = true;
-bool temp_Tag = true;
-bool amb_Tag = true;
-bool ec_Tag = true;
-bool light_Tag = true;
+bool tela1_Tag = true;
+bool tela2_Tag = true;
+bool tela3_Tag = true;
+bool tela4_Tag = true;
+bool tela5_Tag = true;
 bool newData = false;
 
 //variaveis de Tempo 
@@ -134,43 +134,43 @@ void loop() {
 
 void screen_change(){           // muda a informacao em exibicao no display
   
-  if(millis() - LCD_Time >= 0 && millis() - LCD_Time <= 4999 && data_Tag){             //Imprime data e hora atual e a versao do software
+  if(millis() - LCD_Time >= 0 && millis() - LCD_Time <= 4999 && tela1_Tag){             //Imprime data e hora atual e a versao do software
     data();
     LCD_Print(string_data,"TeChem Agro v1.0");
-    data_Tag = false;
+    tela1_Tag = false;
   }
   
-  else if(millis() - LCD_Time >= 5000 && millis() - LCD_Time <= 9999 && temp_Tag){    //Imprime temperatura da solucao nutritiva e da raiz das plantas
+  else if(millis() - LCD_Time >= 5000 && millis() - LCD_Time <= 9999 && tela2_Tag){    //Imprime temperatura da solucao nutritiva e da raiz das plantas
     temperatura();
-    LCD_Print(String("Agua " + String(Temp_Agua) + " C"),String("Raiz " + String(Temp_Raiz) + " C"));
-    temp_Tag = false;
+    LCD_Print(String("Agua " + String(temperatura_agua) + " C"),String("Raiz " + String(temperatura_agua) + " C"));
+    tela2_Tag = false;
   }
   
-  else if(millis() - LCD_Time >= 10000 && millis() - LCD_Time <= 14999 && amb_Tag){  //Imprime temperatura e umidade do ar
+  else if(millis() - LCD_Time >= 10000 && millis() - LCD_Time <= 14999 && tela3_Tag){  //Imprime temperatura e umidade do ar
     temperatura();
-    LCD_Print(String("Temp " + String(Temp_Ambiente) + " C"),String("Umidade " + String(Umidade_Ambiente) + "%"));
-    amb_Tag = false;
+    LCD_Print(String("Temp " + String(temperatura_ambiente) + " C"),String("Umidade " + String(Umidade_Ambiente) + "%"));
+    tela3_Tag = false;
   }
-  else if(millis() - LCD_Time >= 15000 && millis() - LCD_Time <= 19999 && ec_Tag){  //Imprime condutividade eletrica recebida pelos 2 sensores
+  else if(millis() - LCD_Time >= 15000 && millis() - LCD_Time <= 19999 && tela4_Tag){  //Imprime condutividade eletrica recebida pelos 2 sensores
     
-    LCD_Print("EC " + String(condutividade(ECPower1)) + " uS", "Tanque" + String(nivel) + "%");
-    ec_Tag = false;
+    LCD_Print("EC " + String(condutividade(ECPower1)) + " uS", "Tanque" + String(nivel_agua) + "%");
+    tela4_Tag = false;
   }
-  else if(millis() - LCD_Time >= 20000 && millis() - LCD_Time <= 24999 && light_Tag){  //Imprime quantidade de luz 
+  else if(millis() - LCD_Time >= 20000 && millis() - LCD_Time <= 24999 && tela5_Tag){  //Imprime quantidade de luz 
     if(Status_bomba){
       bomba_str = "Ligado";
     }else{
       bomba_str = "Desligado";
     }
     LCD_Print(String( "Luz " + String(iluminacao()) + "%"),String("Bomba " + bomba_str));
-    light_Tag = false;    
+    tela5_Tag = false;    
   }else if(millis() - LCD_Time >= 25000){                     // reinicia o "loop" do display
     LCD_Time = millis();                
-    data_Tag = true;
-    temp_Tag = true;
-    amb_Tag = true;
-    ec_Tag = true;
-    light_Tag = true;
+    tela1_Tag = true;
+    tela2_Tag = true;
+    tela3_Tag = true;
+    tela4_Tag = true;
+    tela5_Tag = true;
   }
 }
 
@@ -238,10 +238,10 @@ void UpdateTime() {               //atualiza a hora quando recebe um valor do ES
 
 void temperatura(){
   sensors.requestTemperatures();
-  Temp_Agua = int(sensors.getTempC(sensor1));
-  Temp_Raiz = int(sensors.getTempC(sensor2));
+  temperatura_agua = int(sensors.getTempC(sensor_temperatura_agua));
+  temperatura_agua = int(sensors.getTempC(sensor_temperatura_raiz));
   int chk = DHT11.read(DHT11PIN);
-  Temp_Ambiente = DHT11.temperature;
+  temperatura_ambiente = DHT11.temperature;
   Umidade_Ambiente = DHT11.humidity;
 } 
 
@@ -249,7 +249,7 @@ int condutividade(int ECPower){
 
   //*********Reading Temperature Of Solution *******************
   sensors.requestTemperatures();
-  Temp_Agua = int(sensors.getTempC(sensor1)); //Stores Value in Variable
+  temperatura_agua = int(sensors.getTempC(sensor_temperatura_agua)); //Stores Value in Variable
     
   //************Estimates Resistance of Liquid ****************//
   digitalWrite(ECPower,HIGH);
@@ -266,7 +266,7 @@ int condutividade(int ECPower){
   
   
   //*************Compensating For Temperaure********************//
-  EC  =  EC / ( 1 + TemperatureCoef * (Temp_Agua - 25));
+  EC  =  EC / ( 1 + TemperatureCoef * (temperatura_agua - 25));
   return(int(EC));
   
 }
@@ -277,7 +277,7 @@ int iluminacao(){
 }
 
 void bomba(){
-  if(Temp_Raiz >= Temp_Agua + 5 || intensidade >= 4){
+  if(temperatura_agua >= temperatura_agua + 5 || intensidade >= 4){
     if (millis() > bomba_time) {
       if (Status_bomba) {
         Status_bomba = false;
@@ -309,9 +309,9 @@ Serial.print(envia);
 
 void Datalog(){
 if(millis() - datalog_time > 60000){
-  datalogstr = String(Temp_Agua) + "," + String(Temp_Raiz) + "," + String(Temp_Ambiente)
+  datalogstr = String(temperatura_agua) + "," + String(temperatura_agua) + "," + String(temperatura_ambiente)
    + "," + String(Umidade_Ambiente) + "," + String(intensidade) + "," + String(condutividade(ECPower1)) + "," 
-   + String(nivel) + String(Status_bomba);
+   + String(nivel_agua) + String(Status_bomba);
    File dataFile = SD.open("datalog.txt", FILE_WRITE);
 
   // if the file is available, write to it:
@@ -326,8 +326,8 @@ if(millis() - datalog_time > 60000){
 
 void waterlevel(){
   if( millis() > waterlevel_time){
-    nivel = sonar.ping_cm();
-    nivel = map((80 - nivel), 0, 60, 0, 100);
+    nivel_agua = sonar.ping_cm();
+    nivel_agua = map((80 - nivel_agua), 0, 60, 0, 100);
     waterlevel_time = millis() + 120000;
   }
 }
@@ -335,7 +335,7 @@ void waterlevel(){
 void coolers(){
   bool Status_cooler = true;
   unsigned long cooler_time = millis();
- if(Temp_Raiz >= Temp_Agua + 5 || intensidade >= 4){
+ if(temperatura_agua >= temperatura_agua + 5 || intensidade >= 4){
     Status_cooler = true;
       }
   else{
