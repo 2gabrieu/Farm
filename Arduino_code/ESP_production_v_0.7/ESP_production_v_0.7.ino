@@ -197,9 +197,9 @@ void parseData() {      // split the data into its parts
 void envia_dados() {
     if( millis() - last_connection_time > 60000 )
     {
-        condutividade = (condutividade1 + condutividade2)/2;
+        condutividade = condutividade1;
         sprintf(fields_a_serem_enviados,"field1=%d&field2=%d&field3=%d&field4=%d&field5=%d&field6=%d&field7=%d", Temp_Agua, Temp_Raiz, Temp_Ambiente,
-        Umidade_Ambiente, condutividade, intensidade, bomba);
+        Umidade_Ambiente, condutividade, intensidade, condutividade2);
         envia_informacoes_thingspeak(fields_a_serem_enviados);
     }
 }
