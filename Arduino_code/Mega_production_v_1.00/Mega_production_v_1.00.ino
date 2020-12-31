@@ -50,15 +50,13 @@ LiquidCrystal_I2C lcd(0x27,16,2); //inicializa display
 //variaveis do tipo int
 int intensidade = 0;
 int temperatura_agua = 0;
-int temperatura_agua = 0;
+int temperatura_raiz = 0;
 int temperatura_ambiente = 0;
 int Umidade_Ambiente = 0;
 int nivel_agua = 0;
 int R1 = 470;
-int Ra = 25; //Resistance of powering Pins
-int ECPin1 = A0;
-int ECPower1 = 40;
-int ppm = 0;
+int ECPin = A0;
+int ECPower = 40;
 const int chipSelect = 53;
 
 //variaveis do tipo boolean
@@ -105,9 +103,9 @@ void setup() {
     Serial.println("<Arduino is ready>");
     lcd.begin();  //inicia o display LCD
 
-    pinMode(ECPower1, OUTPUT);      //Define os pinos para calculo de condutividade elétrica
-    pinMode(ECPin1,INPUT);
-    digitalWrite(ECPower1,LOW);
+    pinMode(ECPower, OUTPUT);      //Define os pinos para calculo de condutividade elétrica
+    pinMode(ECPin,INPUT);
+    digitalWrite(ECPower,LOW);
 
     for(int i = 22; i <= 25; i = i++){    //Coloca os pinos para acionar os relés como saida e desligado
       pinMode(i,OUTPUT);
@@ -128,7 +126,6 @@ void loop() {
     UpdateTime();
     bomba();
     Datalog();
-    waterlevel();
     coolers();
     }
 
@@ -142,18 +139,18 @@ void screen_change(){           // muda a informacao em exibicao no display
   
   else if(millis() - LCD_Time >= 5000 && millis() - LCD_Time <= 9999 && tela2_Tag){    //Imprime temperatura da solucao nutritiva e da raiz das plantas
     temperatura();
-    LCD_Print(String("Agua " + String(temperatura_agua) + " C"),String("Raiz " + String(temperatura_agua) + " C"));
+    LCD_Print(String("Agua " + String(temperatura_agua) + " C"),String("Raiz " + String(temperatura_raiz) + " C"));
     tela2_Tag = false;
   }
   
   else if(millis() - LCD_Time >= 10000 && millis() - LCD_Time <= 14999 && tela3_Tag){  //Imprime temperatura e umidade do ar
-    temperatura();
+    ambiente();
     LCD_Print(String("Temp " + String(temperatura_ambiente) + " C"),String("Umidade " + String(Umidade_Ambiente) + "%"));
     tela3_Tag = false;
   }
   else if(millis() - LCD_Time >= 15000 && millis() - LCD_Time <= 19999 && tela4_Tag){  //Imprime condutividade eletrica recebida pelos 2 sensores
-    
-    LCD_Print("EC " + String(condutividade(ECPower1)) + " uS", "Tanque" + String(nivel_agua) + "%");
+    waterlevel();
+    LCD_Print("EC " + String(condutividade()) + " uS", "Tanque" + String(nivel_agua) + "%");
     tela4_Tag = false;
   }
   else if(millis() - LCD_Time >= 20000 && millis() - LCD_Time <= 24999 && tela5_Tag){  //Imprime quantidade de luz 
@@ -231,7 +228,9 @@ void recvWithStartEndMarkers() {                //recebe dados do ESP
 void UpdateTime() {               //atualiza a hora quando recebe um valor do ESP
   if (newData == true) {
     epoch = atol(receivedChars);
+    if(epoch > now()){
     setTime(epoch);
+    }
     newData = false;
   }
 }
@@ -239,29 +238,32 @@ void UpdateTime() {               //atualiza a hora quando recebe um valor do ES
 void temperatura(){
   sensors.requestTemperatures();
   temperatura_agua = int(sensors.getTempC(sensor_temperatura_agua));
-  temperatura_agua = int(sensors.getTempC(sensor_temperatura_raiz));
+  temperatura_raiz = int(sensors.getTempC(sensor_temperatura_raiz));
   int chk = DHT11.read(DHT11PIN);
+}
+
+void ambiente(){
   temperatura_ambiente = DHT11.temperature;
   Umidade_Ambiente = DHT11.humidity;
 } 
 
-int condutividade(int ECPower){
+int condutividade(){
 
   //*********Reading Temperature Of Solution *******************
   sensors.requestTemperatures();
   temperatura_agua = int(sensors.getTempC(sensor_temperatura_agua)); //Stores Value in Variable
     
   //************Estimates Resistance of Liquid ****************//
-  digitalWrite(ECPower,HIGH);
+  digitalWrite(40,HIGH);
  
-    raw = analogRead(ECPin1);
-    raw = analogRead(ECPin1);
-    digitalWrite(ECPower,LOW);
+    raw = analogRead(A0);
+    raw = analogRead(A0);
+    digitalWrite(40,LOW);
    
   //***************** Converts to EC **************************//
   Vdrop = (5 * raw) / 1024.0;
   Rc = (Vdrop * R1) / (5 - Vdrop);
-  Rc = Rc-Ra; //acounting for Digital Pin Resitance
+  Rc = Rc-25; //acounting for Digital Pin Resitance
   EC = 1000/(Rc * K);
   
   
@@ -310,7 +312,7 @@ Serial.print(envia);
 void Datalog(){
 if(millis() - datalog_time > 60000){
   datalogstr = String(temperatura_agua) + "," + String(temperatura_agua) + "," + String(temperatura_ambiente)
-   + "," + String(Umidade_Ambiente) + "," + String(intensidade) + "," + String(condutividade(ECPower1)) + "," 
+   + "," + String(Umidade_Ambiente) + "," + String(intensidade) + "," + String(condutividade()) + "," 
    + String(nivel_agua) + String(Status_bomba);
    File dataFile = SD.open("datalog.txt", FILE_WRITE);
 
@@ -325,11 +327,8 @@ if(millis() - datalog_time > 60000){
 }
 
 void waterlevel(){
-  if( millis() > waterlevel_time){
-    nivel_agua = sonar.ping_cm();
-    nivel_agua = map((80 - nivel_agua), 0, 60, 0, 100);
-    waterlevel_time = millis() + 120000;
-  }
+  nivel_agua = sonar.ping_cm();
+  nivel_agua = map((80 - nivel_agua), 0, 60, 0, 100);
 }
 
 void coolers(){
@@ -346,7 +345,6 @@ void coolers(){
       } else {
         Status_cooler = true;
         cooler_time = millis() + 2700000;
-        waterlevel();
       }
     }
   }
