@@ -312,7 +312,7 @@ Serial.print(envia);
 void Datalog(){
 if(millis() - datalog_time > 60000){
   datalogstr = String(temperatura_agua) + "," + String(temperatura_agua) + "," + String(temperatura_ambiente)
-   + "," + String(Umidade_Ambiente) + "," + String(intensidade) + "," + String(condutividade()) + "," 
+   + "," + String(Umidade_Ambiente) + "," + String(intensidade) + "," + String(EC) + "," 
    + String(nivel_agua) + String(Status_bomba);
    File dataFile = SD.open("datalog.txt", FILE_WRITE);
 
