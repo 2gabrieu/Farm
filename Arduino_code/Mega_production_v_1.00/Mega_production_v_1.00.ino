@@ -48,15 +48,16 @@ LiquidCrystal_I2C lcd(0x27,16,2); //inicializa display
 
 
 //variaveis do tipo int
-int intensidade = 0;
+int luminosidade = 0;
 int temperatura_agua = 0;
 int temperatura_raiz = 0;
 int temperatura_ambiente = 0;
 int Umidade_Ambiente = 0;
 int nivel_agua = 0;
-int R1 = 470;
+int R1 = 460;
 int ECPin = A0;
 int ECPower = 40;
+int EC = 0;
 const int chipSelect = 53;
 
 //variaveis do tipo boolean
@@ -84,8 +85,7 @@ String string_data = "";
 
 //Variaveis float
 float TemperatureCoef = 0.019;
-float K = 0.01486;
-float EC = 0;
+float K = 1.7;
 float raw= 0;
 float Vdrop= 0;
 float Rc= 0;
@@ -101,17 +101,17 @@ void setup() {
     Serial.begin(9600);   //inicia a comunicacao serial com o Computador
     Serial3.begin(9600);  //inicia a comunicacao serial com o ESP8266
     Serial.println("<Arduino is ready>");
-    lcd.begin();  //inicia o display LCD
-
+    lcd.init();  //inicia o display LCD
+    
     pinMode(ECPower, OUTPUT);      //Define os pinos para calculo de condutividade elétrica
     pinMode(ECPin,INPUT);
     digitalWrite(ECPower,LOW);
 
-    for(int i = 22; i <= 25; i = i++){    //Coloca os pinos para acionar os relés como saida e desligado
+    for(int i = 22; i <= 25; i++){    //Coloca os pinos(22-25) para acionar os relés como saida e desligados
       pinMode(i,OUTPUT);
       digitalWrite(i,HIGH);
     }
-       
+   
     if (!SD.begin(chipSelect)) {
     Serial.println("Card failed, or not present");
       delay(50);
@@ -133,7 +133,7 @@ void screen_change(){           // muda a informacao em exibicao no display
   
   if(millis() - LCD_Time >= 0 && millis() - LCD_Time <= 4999 && tela1_Tag){             //Imprime data e hora atual e a versao do software
     data();
-    LCD_Print(string_data,"TeChem Agro v1.0");
+    LCD_Print(string_data, "TeChem Agro v1.0");
     tela1_Tag = false;
   }
   
@@ -186,6 +186,8 @@ void data(){                  //data e hora atual
   string_data += String(day(t));
   string_data += "/";
   string_data += String(month(t));
+  string_data += "/";
+  string_data += String(year(t));
   string_data += " ";
   string_data += String(hour(t));
   string_data += String(":");
@@ -258,13 +260,13 @@ int condutividade(){
  
     raw = analogRead(A0);
     raw = analogRead(A0);
-    digitalWrite(40,LOW);
+
+  digitalWrite(40,LOW);
    
   //***************** Converts to EC **************************//
-  Vdrop = (5 * raw) / 1024.0;
+  Vdrop = (5 * raw) / 1023.0;
   Rc = (Vdrop * R1) / (5 - Vdrop);
-  Rc = Rc-25; //acounting for Digital Pin Resitance
-  EC = 1000/(Rc * K);
+  EC = 1000000/(Rc * K);
   
   
   //*************Compensating For Temperaure********************//
@@ -274,12 +276,12 @@ int condutividade(){
 }
 
 int iluminacao(){
-  intensidade = map(analogRead(A6), 0, 600, 0, 100);
-  return(intensidade);
+  luminosidade = map(analogRead(A6), 0, 600, 0, 100);
+  return(luminosidade);
 }
 
 void bomba(){
-  if(temperatura_agua >= temperatura_agua + 5 || intensidade >= 4){
+  if(temperatura_agua >= temperatura_raiz + 5 || luminosidade >= 4){
     if (millis() > bomba_time) {
       if (Status_bomba) {
         Status_bomba = false;
@@ -311,9 +313,9 @@ Serial.print(envia);
 
 void Datalog(){
 if(millis() - datalog_time > 60000){
-  datalogstr = String(temperatura_agua) + "," + String(temperatura_agua) + "," + String(temperatura_ambiente)
-   + "," + String(Umidade_Ambiente) + "," + String(intensidade) + "," + String(EC) + "," 
-   + String(nivel_agua) + String(Status_bomba);
+  datalogstr = String(temperatura_agua) + "," + String(temperatura_raiz) + "," + String(temperatura_ambiente)
+   + "," + String(Umidade_Ambiente) + "," + String(luminosidade) + "," + String(EC) + "," 
+   + String(nivel_agua) + "," + String(Status_bomba);
    File dataFile = SD.open("datalog.txt", FILE_WRITE);
 
   // if the file is available, write to it:
@@ -334,7 +336,7 @@ void waterlevel(){
 void coolers(){
   bool Status_cooler = true;
   unsigned long cooler_time = millis();
- if(temperatura_agua >= temperatura_agua + 5 || intensidade >= 4){
+ if(temperatura_agua >= temperatura_raiz + 5 || luminosidade >= 4){
     Status_cooler = true;
       }
   else{
