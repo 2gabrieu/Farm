@@ -90,6 +90,7 @@ float raw= 0;
 float Vdrop= 0;
 float Rc= 0;
 float buffer=0;
+float ajuste_EC = 1;
 
 //Outras variaveis
 const byte numChars = 32;
@@ -133,7 +134,7 @@ void screen_change(){           // muda a informacao em exibicao no display
   
   if(millis() - LCD_Time >= 0 && millis() - LCD_Time <= 4999 && tela1_Tag){             //Imprime data e hora atual e a versao do software
     data();
-    LCD_Print(string_data, "TeChem Agro v1.0");
+    LCD_Print(string_data, "TeChem Agro v1.1");
     tela1_Tag = false;
   }
   
@@ -230,8 +231,8 @@ void recvWithStartEndMarkers() {                //recebe dados do ESP
 void UpdateTime() {               //atualiza a hora quando recebe um valor do ESP
   if (newData == true) {
     epoch = atol(receivedChars);
-    if(epoch > now()){
-    setTime(epoch);
+    if(epoch > 10800){
+    setTime(epoch - 10800);
     }
     newData = false;
   }
@@ -268,7 +269,13 @@ int condutividade(){
   Rc = (Vdrop * R1) / (5 - Vdrop);
   EC = 1000000/(Rc * K);
   
-  
+   //***********Fine tuning for correct EC value************//
+   ajuste_EC = analogRead(A2);
+   if(ajuste_EC != 0){
+    ajuste_EC = 0.8 + ajuste_EC/2557.5;
+    EC = EC *ajuste_EC;
+   }
+     
   //*************Compensating For Temperaure********************//
   EC  =  EC / ( 1 + TemperatureCoef * (temperatura_agua - 25));
   return(int(EC));
@@ -281,14 +288,14 @@ int iluminacao(){
 }
 
 void bomba(){
-  if(temperatura_agua >= temperatura_raiz + 5 || luminosidade >= 4){
+  if(luminosidade >= 4){
     if (millis() > bomba_time) {
       if (Status_bomba) {
         Status_bomba = false;
         bomba_time = millis() + 900000;
       } else {
         Status_bomba = true;
-        bomba_time = millis() + 1800000;
+        bomba_time = millis() + 900000;
       }
     }
   }
@@ -334,21 +341,34 @@ void waterlevel(){
 }
 
 void coolers(){
-  bool Status_cooler = true;
+  bool Status_cooler = false;
   unsigned long cooler_time = millis();
- if(temperatura_agua >= temperatura_raiz + 5 || luminosidade >= 4){
+  if(temperatura_ambiente > 32){
     Status_cooler = true;
-      }
+  }
   else{
-    if (millis() > cooler_time) {
-      if (Status_cooler) {
-        Status_cooler = false;
-        cooler_time = millis() + 3600000;
-      } else {
-        Status_cooler = true;
-        cooler_time = millis() + 2700000;
-      }
-    }
+    Status_cooler = false;
   }
   digitalWrite(23, !Status_cooler);
+}
+
+void maternidade(){
+  bool Status_maternidade = false;
+  bool bomba_maternidade = false;
+  unsigned long maternidade_time = millis();
+  if((hour(now()) == 18 || hour(now()) == 6) && !Status_maternidade){ //ativa o intervalo se for a hora 
+    maternidade_time = millis() + 150000;                             //e o status permitir
+    Status_maternidade = true;
+  }
+
+if(maternidade_time > millis()){  //ativa a bomba durante o intervalo
+  bomba_maternidade = true;
+}
+else{
+  bomba_maternidade = false;
+}
+if(maternidade_time + 7200000 < millis()){    //depois de 2 horas permite a bomba a ativar dnv
+  Status_maternidade = false;
+}
+  digitalWrite(24, !bomba_maternidade);
 }
