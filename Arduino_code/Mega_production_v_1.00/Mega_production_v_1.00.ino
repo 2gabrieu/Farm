@@ -61,7 +61,7 @@ int EC = 0;
 const int chipSelect = 53;
 
 //variaveis do tipo boolean
-bool Status_bomba = true;
+bool Status_bomba = false;
 bool tela1_Tag = true;
 bool tela2_Tag = true;
 bool tela3_Tag = true;
