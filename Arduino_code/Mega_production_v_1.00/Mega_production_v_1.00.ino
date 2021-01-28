@@ -132,6 +132,7 @@ void loop() {
     bomba();
     Datalog();
     coolers();
+    maternidade();
     }
 
 void screen_change(){           // muda a informacao em exibicao no display
