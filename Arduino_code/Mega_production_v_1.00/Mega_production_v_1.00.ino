@@ -68,6 +68,8 @@ bool tela3_Tag = true;
 bool tela4_Tag = true;
 bool tela5_Tag = true;
 bool newData = false;
+bool Status_maternidade = false;
+bool bomba_maternidade = false;
 
 //variaveis de Tempo 
 unsigned long bomba_time = millis();
@@ -77,6 +79,8 @@ unsigned long LCD_Time = millis();
 unsigned long datalog_time = millis();
 unsigned long envia_time = millis();
 unsigned long epoch;
+unsigned long cooler_time = millis();
+unsigned long maternidade_time = millis();
 
 //variaveis string
 String bomba_str = "";
@@ -134,7 +138,7 @@ void screen_change(){           // muda a informacao em exibicao no display
   
   if(millis() - LCD_Time >= 0 && millis() - LCD_Time <= 4999 && tela1_Tag){             //Imprime data e hora atual e a versao do software
     data();
-    LCD_Print(string_data, "TeChem Agro v1.1");
+    LCD_Print(string_data, "TeChem Agro v1.2");
     tela1_Tag = false;
   }
   
@@ -342,20 +346,21 @@ void waterlevel(){
 
 void coolers(){
   bool Status_cooler = false;
-  unsigned long cooler_time = millis();
-  if(temperatura_ambiente > 32){
-    Status_cooler = true;
-  }
-  else{
-    Status_cooler = false;
-  }
-  digitalWrite(23, !Status_cooler);
+
+  if(cooler_time < millis()){
+    if(temperatura_raiz > 30){
+      Status_cooler = true;
+    }
+    else{
+      Status_cooler = false;
+    }
+    cooler_time = millis() + 300000;
+    digitalWrite(23, !Status_cooler);
+    }
 }
 
 void maternidade(){
-  bool Status_maternidade = false;
-  bool bomba_maternidade = false;
-  unsigned long maternidade_time = millis();
+
   if((hour(now()) == 18 || hour(now()) == 6) && !Status_maternidade){ //ativa o intervalo se for a hora 
     maternidade_time = millis() + 150000;                             //e o status permitir
     Status_maternidade = true;
