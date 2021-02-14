@@ -76,14 +76,14 @@ void loop() {
 }
 
 void GetTime(){
-  if(millis() - MilisUpdateTime >= 3600000 || res){
+  if(millis() - MilisUpdateTime >= 300000 || res){
     timeClient.update();
     MilisUpdateTime = millis();
   }
 }
 
 void PrintTime(){
-  if(millis() - MilisSendTime >= 3600000 || res){
+  if(millis() - MilisSendTime >= 300000 || res){
   Serial.print(WiFiTag);
   Serial.print("<");
   Serial.print(timeClient.getEpochTime());
