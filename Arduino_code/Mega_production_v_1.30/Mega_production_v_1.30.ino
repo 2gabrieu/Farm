@@ -1,3 +1,5 @@
+
+
 /*   Pinagem
   
   DHT-22 pino digital 30
@@ -23,7 +25,8 @@
 #include <TimeLib.h> //Biblioteca para formatar a hora recebida do ESP
 #include <Wire.h>    //biblioteca para sensores Onewire
 #include <OneWire.h> //biblioteca para sensores Onewire
-#include <DHT.h>   //Biblioteca para sensor dht11
+#include "Adafruit_Sensor.h"
+#include "Adafruit_AM2320.h"
 #include <DallasTemperature.h> //biblioteca para sensor de temperatura
 #include <NewPing.h> //Biblioteca para Sensor de nivel
 #include <SPI.h> //biblioteca comunicacao para SD
@@ -31,8 +34,7 @@
 #include <SD.h> //biblioteca cartao SD
 
 //definições de sensores
-#define DHTPIN 30     //pino de dados DHT22
-#define DHTTYPE DHT22 
+Adafruit_AM2320 am2320 = Adafruit_AM2320();
 #define ONE_WIRE_BUS 31 //pino de dados sensores de temperatura
 #define TRIGGER_PIN  2  //pino trigger do sensor de nivel
 #define ECHO_PIN     3  //pino echo do sensor de nivel
@@ -44,7 +46,6 @@ uint8_t sensor_temperatura_raiz[8] = { 0x28, 0xFF, 0xDD, 0xFE, 0x71, 0x16, 0x05,
 
 //funcoes dos sensores 
 NewPing sonar(TRIGGER_PIN, ECHO_PIN, MAX_DISTANCE); //sensor de nivel
-DHT dht(DHTPIN, DHTTYPE);
 OneWire oneWire(ONE_WIRE_BUS); //sensores de temperatura 
 DallasTemperature sensors(&oneWire); //sensores de temperatura
 LiquidCrystal_I2C lcd(0x27,16,2); //inicializa display
@@ -106,7 +107,7 @@ char receivedChars[numChars];
 void setup() {
     sensors.begin();
     Wire.begin();
-    dht.begin();
+    am2320.begin();
     Serial.begin(9600);   //inicia a comunicacao serial com o Computador
     Serial3.begin(9600);  //inicia a comunicacao serial com o ESP8266
     Serial.println("<Arduino is ready>");
@@ -255,9 +256,8 @@ void temperatura(){
 }
 
 void ambiente(){
-  int chk = dht.read(DHTPIN);
-  temperatura_ambiente = dht.readTemperature();
-  Umidade_Ambiente = dht.readHumidity();
+  temperatura_ambiente =am2320.readTemperature() ;
+  Umidade_Ambiente = am2320.readHumidity();
 } 
 
 int condutividade(){
