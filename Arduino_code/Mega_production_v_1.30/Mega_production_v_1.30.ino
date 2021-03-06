@@ -144,7 +144,7 @@ void screen_change(){           // muda a informacao em exibicao no display
   
   if(millis() - LCD_Time >= 0 && millis() - LCD_Time <= 4999 && tela1_Tag){             //Imprime data e hora atual e a versao do software
     data();
-    LCD_Print(string_data, "TeChem Agro v1.2");
+    LCD_Print(string_data, "TeChem Agro v1.3");
     tela1_Tag = false;
   }
   
