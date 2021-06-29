@@ -347,14 +347,14 @@ if(millis() - datalog_time > 60000){
 
 void waterlevel(){
   nivel_agua = sonar.ping_cm();
-  nivel_agua = map((80 - nivel_agua), 0, 60, 0, 100);
+  nivel_agua = map((66 - nivel_agua), 0, 54, 0, 100);
 }
 
 void coolers(){
   bool Status_cooler = false;
 
   if(cooler_time < millis()){
-    if(temperatura_raiz > 30){
+    if(temperatura_raiz > 29){
       Status_cooler = true;
     }
     else{
